@@ -69,7 +69,7 @@ def generator(input, random_dim, is_train, reuse=False):
     with tf.variable_scope('gen') as scope:
         if reuse:
             scope.reuse_variables()
-        w1 = tf.get_variable('w1', shape=[random_dim, s4 * s4 * c4], dtype=tf.float32,
+        w1 = tf.compat.v1.get_variable('w1', shape=[random_dim, s4 * s4 * c4], dtype=tf.float32,
                              initializer=tf.truncated_normal_initializer(stddev=0.02))
         b1 = tf.get_variable('b1', shape=[c4 * s4 * s4], dtype=tf.float32,
                              initializer=tf.constant_initializer(0.0))
@@ -80,7 +80,7 @@ def generator(input, random_dim, is_train, reuse=False):
         act1 = tf.nn.relu(bn1, name='act1')
         # 8*8*256
         #Convolution, bias, activation, repeat! 
-        conv2 = tf.layers.conv2d_transpose(act1, c8, kernel_size=[5, 5], strides=[2, 2], padding="SAME",
+        conv2 = tf.keras.layers.Conv2DTranspose(act1, c8, kernel_size=[5, 5], strides=[2, 2], padding="SAME",
                                            kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
                                            name='conv2')
         bn2 = tf.contrib.layers.batch_norm(conv2, is_training=is_train, epsilon=1e-5, decay = 0.9,  updates_collections=None, scope='bn2')
@@ -120,7 +120,7 @@ def discriminator(input, is_train, reuse=False):
             scope.reuse_variables()
 
         #Convolution, activation, bias, repeat! 
-        conv1 = tf.layers.conv2d(input, c2, kernel_size=[5, 5], strides=[2, 2], padding="SAME",
+        conv1 = tf.keras.layers.Conv2D(input, c2, kernel_size=[5, 5], strides=[2, 2], padding="SAME",
                                  kernel_initializer=tf.truncated_normal_initializer(stddev=0.02),
                                  name='conv1')
         bn1 = tf.contrib.layers.batch_norm(conv1, is_training = is_train, epsilon=1e-5, decay = 0.9,  updates_collections=None, scope = 'bn1')
@@ -164,9 +164,9 @@ def discriminator(input, is_train, reuse=False):
 def train():
     random_dim = 100
     
-    with tf.variable_scope('input'):
+    with tf.compat.v1.variable_scope('input'):
         #real and fake image placholders
-        real_image = tf.placeholder(tf.float32, shape = [None, HEIGHT, WIDTH, CHANNEL], name='real_image')
+        real_image = tf.compat.v1.placeholder(tf.float32, shape = [None, HEIGHT, WIDTH, CHANNEL], name='real_image')
         random_input = tf.placeholder(tf.float32, shape=[None, random_dim], name='rand_input')
         is_train = tf.placeholder(tf.bool, name='is_train')
     
@@ -180,10 +180,10 @@ def train():
     g_loss = -tf.reduce_mean(fake_result)  # This optimizes the generator.
             
 
-    t_vars = tf.trainable_variables()
+    t_vars = tf.compat.v1.trainable_variables()
     d_vars = [var for var in t_vars if 'dis' in var.name]
     g_vars = [var for var in t_vars if 'gen' in var.name]
-    trainer_d = tf.train.RMSPropOptimizer(learning_rate=2e-4).minimize(d_loss, var_list=d_vars)
+    trainer_d = tf.compat.v1.train.RMSPropOptimizer(learning_rate=2e-4).minimize(d_loss, var_list=d_vars)
     trainer_g = tf.train.RMSPropOptimizer(learning_rate=2e-4).minimize(g_loss, var_list=g_vars)
     # clip discriminator weights
     d_clip = [v.assign(tf.clip_by_value(v, -0.01, 0.01)) for v in d_vars]
